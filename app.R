@@ -11,22 +11,20 @@ library(shiny)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
-  selectInput("dataset", label = "Dataset", choices = ls("package:datasets")),
-  verbatimTextOutput("summary"),
-  tableOutput("table"),
+  textInput("name", "What's your name?"),
+  textOutput("name")
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-  output$summary <- renderPrint({
-    dataset <- get(input$dataset, "package:datasets")
-    summary(dataset)
+  username <- reactive({
+    get(input$name)
   })
 
-  output$table <- renderTable({
-    dataset <- get(input$dataset, "package:datasets")
-    dataset
+  output$name <- renderText({
+    paste0("Hello ", input$name)
   })
+
 }
 
 # Run the application
