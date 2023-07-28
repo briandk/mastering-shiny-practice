@@ -23,86 +23,32 @@ t_test <- function(x1, x2) {
           test$conf.int[2])
 }
 
-ui <- fluidPage(fluidRow(
-  column(
-    4,
-    "Distribution 1",
-    numericInput(
-      "n1",
-      label = "n",
-      value = 1000,
-      min = 1
+ui <- fluidPage(
+  fluidRow(
+    column(3,
+           numericInput("lambda1", label = "lambda1", value = 3),
+           numericInput("lambda2", label = "lambda2", value = 5),
+           numericInput("n", label = "n", value = 1e4, min = 0)
     ),
-    numericInput(
-      "mean1",
-      label = "µ",
-      value = 0,
-      step = 0.1
-    ),
-    numericInput(
-      "sd1",
-      label = "σ",
-      value = 0.5,
-      min = 0.1,
-      step = 0.1
-    )
-  ),
-  column(
-    4,
-    "Distribution 2",
-    numericInput(
-      "n2",
-      label = "n",
-      value = 1000,
-      min = 1
-    ),
-    numericInput(
-      "mean2",
-      label = "µ",
-      value = 0,
-      step = 0.1
-    ),
-    numericInput(
-      "sd2",
-      label = "σ",
-      value = 0.5,
-      min = 0.1,
-      step = 0.1
-    )
-  ),
-  column(
-    4,
-    "Frequency polygon",
-    numericInput(
-      "binwidth",
-      label = "Bin width",
-      value = 0.1,
-      step = 0.1
-    ),
-    sliderInput(
-      "range",
-      label = "range",
-      value = c(-3, 3),
-      min = -5,
-      max = 5
-    )
+    column(9, plotOutput("hist"))
   )
-),
-fluidRow(column(9, plotOutput("hist")),
-         column(3, verbatimTextOutput("ttest"))))
+)
 
 server <- function(input, output, session) {
-  x1 <- reactive({rnorm(input$n1, input$mean1, input$sd1)})
-  x2 <- reactive({rnorm(input$n2, input$mean2, input$sd2)})
+  timer <- reactiveTimer(500)
+
+  x1 <- reactive({
+    timer()
+    rpois(input$n, input$lambda1)
+  })
+  x2 <- reactive({
+    timer()
+    rpois(input$n, input$lambda2)
+  })
 
   output$hist <- renderPlot({
-
-    freqpoly(x1(), x2(), binwidth = input$binwidth, xlim = input$range)
+    freqpoly(x1(), x2(), binwidth = 1, xlim = c(0, 40))
   }, res = 96)
-
-  output$ttest <- renderText({
-    t_test(x1(), x2())
-  })
 }
 
 shinyApp(ui, server)
