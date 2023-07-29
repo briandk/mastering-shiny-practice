@@ -1,51 +1,54 @@
 library(shiny)
-library(ggplot2)
+library(vroom)
+library(tidyverse)
 
-freqpoly <- function(x1,
-                     x2,
-                     binwidth = 0.1,
-                     xlim = c(-3, 3)) {
-  df <- data.frame(x = c(x1, x2),
-                   g = c(rep("x1", length(x1)), rep("x2", length(x2))))
-
-  ggplot(df, aes(x, colour = g)) +
-    geom_freqpoly(binwidth = binwidth, size = 1) +
-    coord_cartesian(xlim = xlim)
+download_er_data <- function() {
+  dir.create("neiss")
+  download("injuries.tsv.gz")
+  download("population.tsv")
+  download("products.tsv")
 }
 
-t_test <- function(x1, x2) {
-  test <- t.test(x1, x2)
-
-  # use sprintf() to format t.test() results compactly
-  sprintf("p value: %0.3f\n[%0.2f, %0.2f]",
-          test$p.value,
-          test$conf.int[1],
-          test$conf.int[2])
+download <- function(name) {
+  url <- "https://github.com/hadley/mastering-shiny/raw/main/neiss/"
+  download.file(paste0(url, name), paste0("neiss/", name), quiet = TRUE)
 }
 
-ui <- fluidPage(
-  fluidRow(
-    column(3,
-           numericInput("lambda1", label = "lambda1", value = 3),
-           numericInput("lambda2", label = "lambda2", value = 5),
-           numericInput("n", label = "n", value = 1e4, min = 0),
-           actionButton("simulate", "Simulate!")
-    ),
-    column(9, plotOutput("hist"))
-  )
-)
+injuries <- vroom::vroom("neiss/injuries.tsv.gz")
+products <- vroom::vroom("neiss/products.tsv")
+population <- vroom::vroom("neiss/population.tsv")
 
-server <- function(input, output, session) {
-  x1 <- eventReactive(input$simulate, {
-    rpois(input$n, input$lambda1)
-  })
-  x2 <- eventReactive(input$simulate, {
-    rpois(input$n, input$lambda2)
-  })
+selected <- injuries %>% filter(prod_code == 649)
+nrow(selected)
 
-  output$hist <- renderPlot({
-    freqpoly(x1(), x2(), binwidth = 1, xlim = c(0, 40))
-  }, res = 96)
-}
+selected |>
+  count(location, wt = weight, sort = TRUE)
 
-shinyApp(ui, server)
+selected |>
+  count(body_part, wt = weight, sort = TRUE)
+
+selected |>
+  count(diag, wt = weight, sort = TRUE)
+
+summary <- selected |>
+  count(age, sex, wt = weight)
+summary
+
+summary |>
+  ggplot(aes(age, n, color = sex)) +
+  geom_line() +
+  labs(y = "Estimated number of injuries")
+
+summary <- selected |>
+  count(age, sex, wt = weight) |>
+  left_join(population, by = c("age", "sex")) |>
+  mutate(rate = n / (population * 1e4))
+
+summary %>%
+  ggplot(aes(age, rate, colour = sex)) +
+  geom_line(na.rm = TRUE) +
+  labs(y = "Injuries per 10,000 people")
+
+selected |>
+  sample_n(10) |>
+  pull(narrative)
