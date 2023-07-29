@@ -36,14 +36,10 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
-  timer <- reactiveTimer(500)
-
-  x1 <- reactive({
-    input$simulate
+  x1 <- eventReactive(input$simulate, {
     rpois(input$n, input$lambda1)
   })
-  x2 <- reactive({
-    input$simulate
+  x2 <- eventReactive(input$simulate, {
     rpois(input$n, input$lambda2)
   })
 
