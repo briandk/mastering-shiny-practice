@@ -60,10 +60,10 @@ server <- function(input, output, session) {
       filter(prod_code == input$code)
   })
 
-  narrative_sample <- eventReactive({
-    list(input$story, selected())
+  narrative_sample <- eventReactive(
+    list(input$story, selected()),
     selected() |> pull(narrative) |> sample(1)
-  })
+  )
 
   output$diag <- renderTable({
     selected() |> count_top(diag)
@@ -98,7 +98,8 @@ server <- function(input, output, session) {
         theme_light()
     }
   }, res = 96)
-  output$narraative <- renderText(narrative_sample())
+
+  output$narrative <- renderText(narrative_sample())
 }
 
 shinyApp(ui, server)
